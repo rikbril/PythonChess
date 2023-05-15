@@ -36,6 +36,10 @@ class Piece():
         return self.name
 
     @property
+    def currentLocation(self):
+        return self.location
+
+    @property
     def changeLocation(self):
         return self.location
     @changeLocation.setter
