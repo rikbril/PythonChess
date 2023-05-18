@@ -23,6 +23,8 @@ def createBoard():
     chess_pieces_name_counter = {}
 
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqkbnr"
+    start_fen = "8/8/8/3q4/8/8/8/8"
+
     class_dictionary = {"R": Pieces.Rook, "N": Pieces.Knight, "B": Pieces.Bischop, "Q": Pieces.Queen, "K": Pieces.King, "P": Pieces.Pawn}
     class_spelled_out = {"R": "Rook", "N": "Knight", "B":"Bischop", "Q": "Queen", "K": "King", "P":"Pawn"}
 
@@ -50,18 +52,23 @@ def createBoard():
 
             df.iloc[location] = name
             chess_pieces[name] = class_dictionary[letter.capitalize()](name, location, is_white)
-            chess_pieces_location[name] = [location]
+            chess_pieces_location[name] = location
 
             count += 1
     return chess_pieces, chess_pieces_location
 
+def Test():
+    print(chess_pieces[piece].currentLocation)
+    result = Moves.getLocationFromName(chess_pieces, piece)
+
 if __name__ == "__main__":
     chess_pieces, chess_pieces_location = createBoard()
-    #print(chess_pieces_location)
+    for piece in chess_pieces:
+        if piece == "QueenWhite1":
+            result = Moves.getLocationFromName(chess_pieces, piece)
+            print(chess_pieces[piece].movementDirections)
+            #print(df)
 
-    for row in range(len(df.index)):
-        for column in df.columns:
-            result = Moves.getKeyFromDict(chess_pieces_location, [row, column])
-            print(result)
-# for piece in chess_pieces:
-#     print(chess_pieces[piece].changeLocation)
+            print(chess_pieces[piece].is_white)
+            print(chess_pieces[piece].location)
+            
