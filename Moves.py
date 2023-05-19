@@ -40,12 +40,45 @@ def calculatePossibleMoves(dict, piece):
     single_move = dict[piece].single_move
     is_white = dict[piece].is_white
     row, column = dict[piece].location
-    
+
     directions_with_locations = directionsWithLocations(dict, piece, single_move, row, column)
-    movement_result, pinned_result = directionCounter(dict, is_white, directions_with_locations)
+
+    if "Pawn" not in piece:
+        dict[piece].movement, dict[piece].pinned = directionCounter(dict, is_white, directions_with_locations)
+    else:
+        dict[piece].movement, dict[piece].pinned = directionCounterForPawns(dict, is_white, directions_with_locations, column)
+    
+def directionCounterForPawns(dict, is_white, directions_with_locations, column, enpassant_location=False):
+    """takes in the theoretical movement data and transforms into possible movement or attack vectors for pawns
+
+    Args:
+        dict (dict): dictionary of all the chess pieces
+        is_white (bool): if the piece is white
+        directions_with_locations (nested list): list of all the locations the pawns can move to
+        enpassant_location (bool, optional): temp value for later implentation of the enpassant rule. Defaults to False.
+
+    Returns:
+        2 nested lists: 1 list for all the regular moves and a list for all the attack moves
+    """
+    
+    movement_result = []
+    pinned_result = []
+    
+    for direction in directions_with_locations:
+        path_blocked = False
+        for step in direction:
+            encounter_color = locationToColour(dict, step)
+            if encounter_color == None and path_blocked == False:
+                if step[1] == column:
+                    movement_result.append(step)
+            elif encounter_color != is_white or step == enpassant_location:
+                if step[1] != column:
+                    pinned_result.append(step)
+                else:
+                    path_blocked = True
 
     return movement_result, pinned_result
- 
+
 def directionCounter(dict, is_white, directions_with_locations):
     """ Takes in a nested array of each direction a piece can move into and the location of the steps in each direction
     Args:
@@ -100,7 +133,7 @@ def directionsWithLocations(dict, piece, single_move, row, column):
         _type_: _description_
     """
     
-    movement_directions = dict[piece].movementDirections
+    movement_directions = dict[piece].move_directions
     result = []
 
     for direction in movement_directions:
@@ -128,6 +161,19 @@ def directionsWithLocations(dict, piece, single_move, row, column):
     return result
 
 def modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, substract=False):
+    """takes in a chess piece and modifies a df which keeps track of all the positions this color pins down
+
+    Args:
+        dict (dict): dictonary of all the chess pieces
+        piece (dict[key]): the chess piece in question
+        df_pinned_by_white (pandasDF): df of all the locations the white pieces could attack in the next turn (from
+        the perspective of the opposite colour)
+        df_pinned_by_black (pandasDF): df of all the locations the black pieces could attack in the next turn (from
+        the perspective of the opposite colour)
+        substract (bool, optional): if True then it substracks the pinned locations from the DF.
+        Done before moveing or after being killed. Defaults to False.
+    """
+
     pinned_result = dict[piece].pinned
     modifier = 1
 

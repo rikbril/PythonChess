@@ -9,15 +9,16 @@ class Piece():
             is_white (bool): True if the piece is White, otherwise the piece is Black
             has_moved (bool, optional): keeps track if the piece has moved, will be used for de double start of pawns and king/rook swap. Defaults to False.
         """
-
+        self.points = 100
         self.name = name  
         self.location = location
         self.is_white = is_white
         self.single_move = self.single_move
         self.has_moved = has_moved
-        if "Pawn" not in self.name:
-            self.move_directions = self.setDirections()
-            self.attack_directions = self.move_directions
+        self.movement = [None]
+        self.pinned = [None]
+        self.move_directions = self.setDirections()
+        self.attack_directions = self.move_directions
 
     def setDirections(self):
         """the movement directions are writendown in a way which is easy to understand, this function splits all the movement directions up and calls.
@@ -53,34 +54,6 @@ class Piece():
             else:
                 x -= 1
         return [x,y]
-    
-    @property
-    def movementDirections(self):
-        return self.move_directions
-
-    @property
-    def getName(self):
-        return self.name
-
-    @property
-    def currentLocation(self):
-        return self.location
-    @property
-    def changeLocation(self):
-        return self.location
-    @changeLocation.setter
-    def changeLocation(self, new_location):
-        self.location = new_location
-
-    @property
-    def hasMoved(self):
-        return self.has_moved
-    @hasMoved.setter
-    def hasMoved(self, value):
-        if self.has_moved == False:
-            if "pawn" in self.name:
-                del self.move_directions[1]
-            self.has_moved = True
 
 class Rook(Piece):
     movement_directions = ["north", "east", "south", "west"]
@@ -105,6 +78,8 @@ class Knight(Piece):
     
 class Pawn(Piece):
     single_move = True
+    movement_directions = []
+    attack_directions = []
     def __init__(self, name, location, is_white, has_moved=False):
         """Pawns have a different movement charataristics than other pieces so they get initialized in their subclass for clarity
 
@@ -115,16 +90,12 @@ class Pawn(Piece):
             has_moved (bool, optional): keeps track if the piece has moved, will be used for de double start of pawns and king/rook swap. Defaults to False.
         """
         super().__init__(name, location, is_white, has_moved=False)
-        
+        self.points = 50
         self.single_move = self.single_move
-        self.move_directions = []
-        self.attack_directions = []
         
         # adjust the movement and attack vectors of the pawns in regards to their color
-        if self.is_white == True:
-            self.move_directions = [[1, 0], [2,0]]
-            self.attack_directions = [[1, -1], [1 , 1]]
+        if self.is_white == False:
+            self.move_directions = [[1, 0], [1, -1], [1, 1], [2, 0]]
         else:
-            self.move_directions = [[-1, 0], [-2, 0]]
-            self.attack_directions = [[-1, -1], [-1 , 1]]
+            self.move_directions = [[-1, 0], [-1, -1], [-1, 1], [-2, 0]]
 
