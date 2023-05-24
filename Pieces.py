@@ -94,8 +94,24 @@ class Pawn(Piece):
         self.single_move = self.single_move
         
         # adjust the movement and attack vectors of the pawns in regards to their color
-        if self.is_white == False:
+        if self.is_white == True:
             self.move_directions = [[1, 0], [1, -1], [1, 1], [2, 0]]
         else:
             self.move_directions = [[-1, 0], [-1, -1], [-1, 1], [-2, 0]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -17,11 +17,13 @@ def getLocationFromName(dict, value):
     """
     for key in dict:
         if key == value:
-            return dict[key].currentLocation
+            return dict[key].location
     
-def calculatePossibleMoves(dict, piece):
+def possibleMovesForPiece(dict, piece):
     """Takes in a piece and calculates to which places the piece can move, and which locations are pinned by this piece. 
-    in order to keep track of attack/defend vectors (i presume, i dont play chess)
+    in order to keep track of attack/defend vectors (i presume, i dont play chess).
+
+    This function does not look for Casteling, Enpassant or piece Promotion. That is done in the move aggregator
 
     This function uses 2 child functions: 
      - directionsWithLocations: returns a nested array of all the places the piece can move to
@@ -43,11 +45,10 @@ def calculatePossibleMoves(dict, piece):
 
     directions_with_locations = directionsWithLocations(dict, piece, single_move, row, column)
 
-    if "Pawn" not in piece:
-        dict[piece].movement, dict[piece].pinned = directionCounter(dict, is_white, directions_with_locations)
-    else:
+    if "Pawn" in piece:
         dict[piece].movement, dict[piece].pinned = directionCounterForPawns(dict, is_white, directions_with_locations, column)
-    
+    else:
+        dict[piece].movement, dict[piece].pinned = directionCounter(dict, is_white, directions_with_locations)
 def directionCounterForPawns(dict, is_white, directions_with_locations, column, enpassant_location=False):
     """takes in the theoretical movement data and transforms into possible movement or attack vectors for pawns
 
@@ -61,8 +62,8 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
         2 nested lists: 1 list for all the regular moves and a list for all the attack moves
     """
     
-    movement_result = []
-    pinned_result = []
+    movement_result = [[]]
+    pinned_result = [[]]
     
     for direction in directions_with_locations:
         path_blocked = False
@@ -70,10 +71,11 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
             encounter_color = locationToColour(dict, step)
             if encounter_color == None and path_blocked == False:
                 if step[1] == column:
-                    movement_result.append(step)
+                    movement_result[0].append(step)
             elif encounter_color != is_white or step == enpassant_location:
                 if step[1] != column:
-                    pinned_result.append(step)
+                    movement_result[0].append(step)
+                    pinned_result[0].append(step)
                 else:
                     path_blocked = True
 
@@ -189,11 +191,35 @@ def modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, substrac
             for step in direction:
                 df_pinned_by_black.iloc[*step] += modifier
 
-
-
+def CheckForSpecialMoves(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, enpassant_location):
+    special_moves = []
     
+    color_name = "White" if is_white == True else "Black"
+    king = "King" + color_name + "1"
+    pawn = "Pawn" + color_name
+    opposing_color_df = df_pinned_by_black.copy() if is_white == True else df_pinned_by_white.copy()  
+    row = 0 if is_white else 7 # variable can be used to simplefy further code logic for casteling
 
+    ## Logic for casteling of the kings with the rooks. the starting positions are [0,4] for black and [7,4] for white
+    if not dict[king].has_moved:
+        if dict[("Rook" + color_name + "1")].has_moved == False:
+            if df.iloc[row, 1] == 0 and df.iloc[row, 2] == 0 and df.iloc[row, 3] == 0:
+                if opposing_color_df.iloc[row, 0] == 0 and opposing_color_df.iloc[row, 1] == 0 and opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0:
+                    special_moves.append(["SpecialMove", color_name + "CastleLeft"])
+        if dict[("Rook" + color_name + "2")].has_moved == False:
+            if df.iloc[row, 5] == 0 and df.iloc[row, 6] == 0:
+                if opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0 and opposing_color_df.iloc[row, 7] == 0:
+                    special_moves.append(["SpecialMove, ", color_name + "CastleRight"])
 
+    ## looking for pawn promotion, for now only queens are possible
+    row, promotion_row = [6,7] if is_white else [1, 0]
+    for column in df.columns:
+        if pawn in str(df.iloc[row, column]):
+            if df.iloc[promotion_row, column] == 0:
+                print("Promotion")
+                special_moves.append(["SpecialMove", (f"{df.iloc[row, column]}Promotion")])
+
+    return special_moves
 
 
 

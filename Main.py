@@ -21,10 +21,11 @@ def createBoard():
     chess_pieces = {}
     chess_pieces_name_counter = {}
 
+    ## Black start on the top of the board, white at the bottom
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
-    
-    #start_fen = "RNBQKBNR/8//8/82PP4/8/8/rnbqkbnr"
-    #start_fen = "8/8/1q6/8/4P3/8/8/1p6"
+
+    #start_fen = "R3K2R/8/8/8/8/8/8/rnbqkbnr"
+    start_fen = "R3K2R/8/8/8/8/6P1/1ppppp1p/rrnqknbr"
 
     class_dictionary = {"R": Pieces.Rook, "N": Pieces.Knight, "B": Pieces.Bischop, "Q": Pieces.Queen, "K": Pieces.King, "P": Pieces.Pawn}
     class_spelled_out = {"R": "Rook", "N": "Knight", "B":"Bischop", "Q": "Queen", "K": "King", "P":"Pawn"}
@@ -37,14 +38,12 @@ def createBoard():
         elif letter.isdigit():
             count += int(letter)
         else:
+            is_white = True if letter.capitalize() == letter else False
             class_name = class_spelled_out[letter.capitalize()]
-            is_white = True
-            if letter == letter.capitalize():
-                is_white = False
-                class_name += "Black"
-            else:
-                class_name += "White"
+            class_name += "White" if is_white == True else "Black"
+
             location = count//8, count%8
+            
             if letter in chess_pieces_name_counter:
                 chess_pieces_name_counter[letter] += 1
             else:
@@ -64,13 +63,21 @@ def Test():
     print(chess_pieces[piece].location)
 
 if __name__ == "__main__":
+    ## Black start on the top of the board, white at the bottom
     chess_pieces = createBoard()
     test = "RookWhite2"
-    test2 = "PawnWhite3"
+    test2 = "PawnWhite1"
+    print(df)
     for piece in chess_pieces:
-        Moves.calculatePossibleMoves(chess_pieces, piece)
+        Moves.possibleMovesForPiece(chess_pieces, piece)
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
         #print(f"Piece: {piece} has a point total of: {chess_pieces[piece].points}")  
-    print("location", chess_pieces[test2].location)
-    print(chess_pieces[test2].movement)
+    print()   
+    Moves.CheckForSpecialMoves(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black, [000])
+    #print(chess_pieces[test].movement)
+    #print(chess_pieces[test2].movement)
 
+    for piece in chess_pieces:
+        if "Pawn" in piece:
+            print(piece, chess_pieces[piece].movement)
+            print(piece, chess_pieces[piece].pinned)
