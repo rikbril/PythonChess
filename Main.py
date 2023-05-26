@@ -24,8 +24,7 @@ def createBoard():
     ## Black start on the top of the board, white at the bottom
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
 
-    #start_fen = "R3K2R/8/8/8/8/8/8/rnbqkbnr"
-    start_fen = "R3K2R/8/8/8/8/6P1/1ppppp1p/rrnqknbr"
+    start_fen = "8/3Q4/2Q1Q3/8/8/2q5/8/7k"
 
     class_dictionary = {"R": Pieces.Rook, "N": Pieces.Knight, "B": Pieces.Bischop, "Q": Pieces.Queen, "K": Pieces.King, "P": Pieces.Pawn}
     class_spelled_out = {"R": "Rook", "N": "Knight", "B":"Bischop", "Q": "Queen", "K": "King", "P":"Pawn"}
@@ -61,23 +60,22 @@ def Test():
     print(chess_pieces[piece].currentLocation)
     print(chess_pieces[piece].is_white)
     print(chess_pieces[piece].location)
+    print(Moves.checkForPromotion(chess_pieces, False, df))
+    print(Moves.CheckForCastle(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black))
 
 if __name__ == "__main__":
     ## Black start on the top of the board, white at the bottom
     chess_pieces = createBoard()
-    test = "RookWhite2"
-    test2 = "PawnWhite1"
+    print()
     print(df)
     for piece in chess_pieces:
         Moves.possibleMovesForPiece(chess_pieces, piece)
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
-        #print(f"Piece: {piece} has a point total of: {chess_pieces[piece].points}")  
     print()   
-    Moves.CheckForSpecialMoves(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black, [000])
-    #print(chess_pieces[test].movement)
-    #print(chess_pieces[test2].movement)
+    print(df_pinned_by_white)
+    print()
+    Moves.modifyPinnedDF(chess_pieces, "QueenWhite2", df_pinned_by_white, df_pinned_by_black, True)
+    print()
+    print(df_pinned_by_white)
 
-    for piece in chess_pieces:
-        if "Pawn" in piece:
-            print(piece, chess_pieces[piece].movement)
-            print(piece, chess_pieces[piece].pinned)
+

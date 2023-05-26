@@ -191,36 +191,64 @@ def modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, substrac
             for step in direction:
                 df_pinned_by_black.iloc[*step] += modifier
 
-def CheckForSpecialMoves(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, enpassant_location):
-    special_moves = []
+def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
+    """Function takes in multiple arguments which are used to look for Casteling. the is_white color 
+    argument is used a couple
+    of times in order to create variable names which are used to check for the special moves.
+
+    Args:
+        dict (dictionary): dictionary of all the chess pieces
+        is_white (bool): color of the piece. True for white, False for black
+        df (DataFrame): DataFrame of all the pieces still in the game
+        df_pinned_by_white (DataFrame): DataFrame of all the places which are under attack by white
+        df_pinned_by_black (DataFrame): DataFrame of all the places which are under attack by black
+    
+    Returns:
+        list: list with 2 variables, for each castle direction one bool
+    """
+
+    castle = [False, False]
     
     color_name = "White" if is_white == True else "Black"
     king = "King" + color_name + "1"
-    pawn = "Pawn" + color_name
     opposing_color_df = df_pinned_by_black.copy() if is_white == True else df_pinned_by_white.copy()  
     row = 0 if is_white else 7 # variable can be used to simplefy further code logic for casteling
 
     ## Logic for casteling of the kings with the rooks. the starting positions are [0,4] for black and [7,4] for white
     if not dict[king].has_moved:
-        if dict[("Rook" + color_name + "1")].has_moved == False:
-            if df.iloc[row, 1] == 0 and df.iloc[row, 2] == 0 and df.iloc[row, 3] == 0:
-                if opposing_color_df.iloc[row, 0] == 0 and opposing_color_df.iloc[row, 1] == 0 and opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0:
-                    special_moves.append(["SpecialMove", color_name + "CastleLeft"])
-        if dict[("Rook" + color_name + "2")].has_moved == False:
-            if df.iloc[row, 5] == 0 and df.iloc[row, 6] == 0:
-                if opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0 and opposing_color_df.iloc[row, 7] == 0:
-                    special_moves.append(["SpecialMove, ", color_name + "CastleRight"])
+        if dict.get("Rook" + color_name + "1"):
+            if dict[("Rook" + color_name + "1")].has_moved == False:
+                if df.iloc[row, 1] == 0 and df.iloc[row, 2] == 0 and df.iloc[row, 3] == 0:
+                    if opposing_color_df.iloc[row, 0] == 0 and opposing_color_df.iloc[row, 1] == 0 and opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0:
+                        castle[0] = True
+        if dict.get("Rook" + color_name + "2"):
+            if dict[("Rook" + color_name + "2")].has_moved == False:
+                if df.iloc[row, 5] == 0 and df.iloc[row, 6] == 0:
+                    if opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0 and opposing_color_df.iloc[row, 7] == 0:
+                        castle[1] = True
 
-    ## looking for pawn promotion, for now only queens are possible
-    row, promotion_row = [6,7] if is_white else [1, 0]
+    return castle
+
+def checkForPromotion(dict, is_white, df):
+    """check for promotion, this function is called after a move is made but before the opponents turn is.
+
+    Args:
+        dict (dictionary): dictionary of all the chess pieces
+        is_white (bool): color of the pieces to be checked. True for white, False for Black
+        df (DataFrame): DataFrame of all the pieces on the board with their locations.
+
+    Returns:
+        nested list: location for if their is a piece which will be promoted other wise a list without content
+    """
+    row = 7 if is_white else 0
+    promote = False
+
     for column in df.columns:
-        if pawn in str(df.iloc[row, column]):
-            if df.iloc[promotion_row, column] == 0:
-                print("Promotion")
-                special_moves.append(["SpecialMove", (f"{df.iloc[row, column]}Promotion")])
+        if df.iloc[row, column] == 0: pass
+        elif "Pawn" in df.iloc[row, column]:
+            return [[row, column]]
 
-    return special_moves
-
+    return [[]]
 
 
 
