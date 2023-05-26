@@ -4,6 +4,38 @@ def locationToColour(dict, value):
             return dict[item].is_white
     return None
 
+def unpackNestedList(nested):
+    result = []
+    for item in nested:
+        if isinstance(item, list):
+            result.extend(unpackNestedList(item))
+        else:
+            result.append(item)
+    return result
+
+def repackLocationList(nested):
+    """Location data is stored in sets of 2. After unpacking the nested lists with variable depth it needs
+    to be repacked in row, column lists. due to the recursive nature of this process the unpacking is done
+    in a seperate function
+
+    Args:
+        nested list: a nested list which needs to be flattend first and repacked in [row, column] format
+
+    Returns:
+        list: nested list with an uniform depth of 1
+    """
+    unnested = unpackNestedList(nested)
+    temp = []
+    result = []
+
+    for item in unnested:
+        temp.append(item)
+        if len(temp) == 2:
+            result.append(temp)
+            temp = []
+
+    return result
+
 def getLocationFromName(dict, value):
     """unnesesary function, though i needed this function to acces class values from a memory location.
        However, this can be done directly. will remove this function in the next commit
@@ -49,6 +81,7 @@ def possibleMovesForPiece(dict, piece):
         dict[piece].movement, dict[piece].pinned = directionCounterForPawns(dict, is_white, directions_with_locations, column)
     else:
         dict[piece].movement, dict[piece].pinned = directionCounter(dict, is_white, directions_with_locations)
+
 def directionCounterForPawns(dict, is_white, directions_with_locations, column, enpassant_location=False):
     """takes in the theoretical movement data and transforms into possible movement or attack vectors for pawns
 
@@ -61,23 +94,24 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
     Returns:
         2 nested lists: 1 list for all the regular moves and a list for all the attack moves
     """
-    
     movement_result = [[]]
     pinned_result = [[]]
-    
+
+    path_blocked = False
     for direction in directions_with_locations:
-        path_blocked = False
         for step in direction:
             encounter_color = locationToColour(dict, step)
-            if encounter_color == None and path_blocked == False:
-                if step[1] == column:
-                    movement_result[0].append(step)
-            elif encounter_color != is_white or step == enpassant_location:
-                if step[1] != column:
-                    movement_result[0].append(step)
-                    pinned_result[0].append(step)
+            if step[1] == column:
+                if encounter_color == None:
+                    if path_blocked == False:
+                        movement_result[0].append(step)
                 else:
                     path_blocked = True
+            else:
+                pinned_result[0].append(step)
+                if encounter_color != None:
+                    if encounter_color != is_white or step == enpassant_location:
+                        movement_result[0].append(step)
 
     return repackLocationList(movement_result), repackLocationList(pinned_result)
 
@@ -122,7 +156,6 @@ def directionCounter(dict, is_white, directions_with_locations):
 
     movement_result = repackLocationList(movement_result)
     pinned_result = repackLocationList(pinned_result)
-    
     return movement_result, pinned_result
 
 def directionsWithLocations(dict, piece, single_move, row, column):
@@ -188,10 +221,10 @@ def modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, substrac
 
     if "White" in piece:
         for location in pinned_result:
-            df_pinned_by_white.iloc[location] += modifier
+            df_pinned_by_white.iloc[*location] += modifier
     else:
         for location in pinned_result:
-            df_pinned_by_black.iloc[location] += modifier
+            df_pinned_by_black.iloc[*location] += modifier
 
 def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
     """Function takes in multiple arguments which are used to look for Casteling. the is_white color 
@@ -214,57 +247,26 @@ def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
     color_name = "White" if is_white == True else "Black"
     king = "King" + color_name + "1"
     opposing_color_df = df_pinned_by_black.copy() if is_white == True else df_pinned_by_white.copy()  
-    row = 0 if is_white else 7 # variable can be used to simplefy further code logic for casteling
+    row = 0 if is_white else 7 
 
     ## Logic for casteling of the kings with the rooks. the starting positions are [0,4] for black and [7,4] for white
     if not dict[king].has_moved:
         if dict.get("Rook" + color_name + "1"):
-            if dict[("Rook" + color_name + "1")].has_moved == False:
+            rook_name = "Rook" + color_name + "1"
+            if dict[rook_name].has_moved == False:
                 if df.iloc[row, 1] == 0 and df.iloc[row, 2] == 0 and df.iloc[row, 3] == 0:
                     if opposing_color_df.iloc[row, 0] == 0 and opposing_color_df.iloc[row, 1] == 0 and opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0:
                         castle[0] = True
         if dict.get("Rook" + color_name + "2"):
-            if dict[("Rook" + color_name + "2")].has_moved == False:
+            rook_name = "Rook" + color_name + "2"
+            if dict[rook_name].has_moved == False:
                 if df.iloc[row, 5] == 0 and df.iloc[row, 6] == 0:
                     if opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0 and opposing_color_df.iloc[row, 7] == 0:
                         castle[1] = True
 
     return castle
 
-def unpackNestedList(nested):
-    result = []
-    for item in nested:
-        if isinstance(item, list):
-            result.extend(unpackNestedList(item))
-        else:
-            result.append(item)
-    return result
-
-def repackLocationList(nested):
-    """Location data is stored in sets of 2. After unpacking the nested lists with variable depth it needs
-    to be repacked in row, column lists. due to the recursive nature of this process the unpacking is done
-    in a seperate function
-
-    Args:
-        nested list: a nested list which needs to be flattend first and repacked in [row, column] format
-
-    Returns:
-        list: nested list with an uniform depth of 1
-    """
-
-    unnested = unpackNestedList(nested)
-    temp = []
-    result = []
-
-    for item in unnested:
-        temp.append(item)
-        if len(temp) == 2:
-            result.append(temp)
-            temp = []
-
-    return result
-
-def checkForPromotion(dict, is_white, df):
+def checkForPromotion(is_white, df):
     """check for promotion, this function is called after a move is made but before the opponents turn is.
 
     Args:
@@ -276,23 +278,164 @@ def checkForPromotion(dict, is_white, df):
         nested list: location for if their is a piece which will be promoted other wise a list without content
     """
     row = 7 if is_white else 0
-    promote = False
 
     for column in df.columns:
         if df.iloc[row, column] == 0: pass
         elif "Pawn" in df.iloc[row, column]:
             return [[row, column]]
 
-    return [[]]
+    return False
 
-def movePiece(dict, piece, is_white, df, df_pinned_by_white, df_pinned_by_black):
+def promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_white, df_pinned_by_black, class_dictionary):
+    dict.pop(piece)
+    queen_name = "QueenWhite" if is_white == True else "QueenBlack"
+    count = 1
+    for name in dict:
+        if  queen_name in name:
+            count += 1
+    queen_name = queen_name + str(count) 
+    df.iloc[*new_piece_location] = queen_name
+    dict[queen_name] = class_dictionary["Q"](queen_name, new_piece_location, is_white)
+
+    possibleMovesForPiece(dict, queen_name)
+    modifyPinnedDF(dict, queen_name, df_pinned_by_white, df_pinned_by_black)
+
+
+def movePiece(dict, piece, new_location, df, df_pinned_by_white, df_pinned_by_black):
+    """Moves a piece to its new location. This includes looking for all the pieces it might interact with and recalculating
+    their possible moves, which places they are pinning down. 
+
+    Args:
+        dict (dictionary): dictionary of all the possible moves
+        piece (dictionary[key]): piece which is moveing
+        new_location ([row, column]): the location to which the piece is moveing to
+        df (DataFrame): DataFrame of all the chess pieces
+        df_pinned_by_white (DataFrame): DataFrame of all the places which are pinned down by White
+        df_pinned_by_black (DataFrame): DataFrame of all the places which are pinned down by Black
+    """
+    piece_location = dict[piece].location
+    df.iloc[*piece_location] = 0
+    target_piece = False if df.iloc[*new_location] == 0 else df.iloc[*new_location]
     modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, True)
+    encounter_list = lookForEncounters(dict, piece, piece_location, new_location, target_piece)
 
-    for other_pieces in dict:
-        pass
+    for other_piece in encounter_list:
+        modifyPinnedDF(dict, other_piece, df_pinned_by_white, df_pinned_by_black, True)
 
+    if target_piece:
+        dict.pop(target_piece)
+        if target_piece in encounter_list:
+            encounter_list.remove(target_piece)
 
+    df.iloc[*new_location] = piece
+    dict[piece].location = new_location
 
+    for other_piece in encounter_list:
+        possibleMovesForPiece(dict, other_piece)
+        modifyPinnedDF(dict, other_piece, df_pinned_by_white, df_pinned_by_black)
+
+def moveCasteling(dict, df, king, rook, castle_location, df_pinned_by_white, df_pinned_by_black):
+    modifyPinnedDF(dict, rook, df_pinned_by_white, df_pinned_by_black, True)
+    modifyPinnedDF(dict, king, df_pinned_by_white, df_pinned_by_black, True)
+
+    df.iloc[castle_location[0], 4] = rook
+    df.iloc[*castle_location] = king
+
+    dict[king].location = [*castle_location]
+    dict[rook].location = [castle_location[0], 4]
+
+    possibleMovesForPiece(dict, king)
+    possibleMovesForPiece(dict, rook)
+
+    modifyPinnedDF(dict, rook, df_pinned_by_white, df_pinned_by_black)
+    modifyPinnedDF(dict, king, df_pinned_by_white, df_pinned_by_black)
+
+def lookForEncounters(dict, piece, old_piece_location, new_piece_location, target_piece):
+    """looping through the pinned locations of all the pieces on the board and listing all the pieces which interact with 
+    either the old or the new location 
+
+    Args:
+        dict (dictionary): dictionary of all the pieces
+        piece (dictionary[key]): chess piece which is being checked
+        old_piece_location (location): the old location of the piece which is moveing
+        new_piece_location (location): the new location of the piece which is moveing
+        target_piece (dictionary[key]): chess piece which is on the new location of the piece being moved. value is False if 
+        the spot is empty
+
+    Returns:
+        list: all pieces which need to be recalculated
+    """
+    encounter_list = [] 
+    for other_piece in dict:
+        if piece == other_piece:
+            pass
+        elif piece == target_piece:
+            encounter_list.append(other_piece)
+        else:
+            for location in dict[other_piece].pinned:
+                if location == [*old_piece_location] or location == [*new_piece_location]:
+                    encounter_list.append(other_piece)
+            if "Pawn" in other_piece:
+                current_location = dict[other_piece].location
+                for movement_Adjuster in dict[other_piece].move_directions:
+                    adjusted_location = [(current_location[0] + movement_Adjuster[0]), current_location[1]]
+                    if movement_Adjuster[1] == 0:
+                        if adjusted_location == [*old_piece_location] or adjusted_location == [*new_piece_location]:
+                            encounter_list.append(other_piece)
+
+    encounter_list.append(target_piece) if target_piece is not False and target_piece not in encounter_list else encounter_list
+
+    return encounter_list
+
+def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
+    """lists all the moves which a color can make, including casteling
+
+    Args:
+        dict (dictionary): dictionary of all the chess pieces
+        is_white (bool): color of the piece. True for white, False for black
+        df (DataFrame): DataFrame of all the pieces still in the game
+        df_pinned_by_white (DataFrame): DataFrame of all the places which are under attack by white
+        df_pinned_by_black (DataFrame): DataFrame of all the places which are under attack by black
+
+    Returns:
+        list: all the moves by all the pieces. castle left and right are added seperatly
+    """
+    all_moves = []
+    name_of_color = "White" if is_white == True else "Black"
+    
+    for piece in dict:
+        if name_of_color in piece and dict[piece].movement != []:
+            
+            all_moves.append([piece, dict[piece].movement]) 
+
+    castle = CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black)
+    for x in range(len(castle)):
+        if castle[x] == True:
+            color_name = "White" if is_white == True else "Black"
+            king = "King" + color_name + "1"
+            rook = "Rook" + color_name
+            rook += "1" if x == 0 else "2"
+            row = 0 if is_white else 7
+            column = 0 if x == 0 else 7
+            side = "Left" if x == 0 else "Right"
+            all_moves.append([("Castle" + side), [king, rook, [row, column]]])
+    
+    return all_moves
+
+def activateMove(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class_dictionary):
+    if "Castle" in move[0]:
+        king, rook, castle_location = move[1]
+        moveCasteling(dict, df, king, rook, castle_location, df_pinned_by_white, df_pinned_by_black)
+    else:
+        piece = move[0]
+        new_piece_location = move[1]
+        movePiece(dict, piece, new_piece_location, df, df_pinned_by_white, df_pinned_by_black)
+        
+        promotion = checkForPromotion(is_white, df)
+        if promotion != False:
+            promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
+    
+    
 
 
 

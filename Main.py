@@ -11,6 +11,9 @@ for row in range(len(df.index)):
 df_pinned_by_white = df.copy()
 df_pinned_by_black = df.copy()
 
+class_dictionary = {"R": Pieces.Rook, "N": Pieces.Knight, "B": Pieces.Bischop, "Q": Pieces.Queen, "K": Pieces.King, "P": Pieces.Pawn}
+class_spelled_out = {"R": "Rook", "N": "Knight", "B":"Bischop", "Q": "Queen", "K": "King", "P":"Pawn"}
+
 # function to create the startboard for easier testing of different starting positions
 def createBoard():
     """Creates the playing board with all the pieces for both colours. you can change the start_fen to generate a different start board
@@ -24,10 +27,11 @@ def createBoard():
     ## Black start on the top of the board, white at the bottom
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
 
-    start_fen = "8/3Q4/2Q1Q3/8/8/2q5/8/7k"
+    start_fen = "R3K2R/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
+    #start_fen = "8/8/2Q1Q3/8/8/2q5/8/7k"
+    #start_fen = "3P4/8/2P5/8/8/8/8/2q5"
+    #start_fen = "3P4/3n4/8/8/8/8/8/8"
 
-    class_dictionary = {"R": Pieces.Rook, "N": Pieces.Knight, "B": Pieces.Bischop, "Q": Pieces.Queen, "K": Pieces.King, "P": Pieces.Pawn}
-    class_spelled_out = {"R": "Rook", "N": "Knight", "B":"Bischop", "Q": "Queen", "K": "King", "P":"Pawn"}
 
     count = 0
 
@@ -62,23 +66,43 @@ def Test():
     print(chess_pieces[piece].location)
     print(Moves.checkForPromotion(chess_pieces, False, df))
     print(Moves.CheckForCastle(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black))
+    Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
+    Moves.activateMove(chess_pieces, move, False, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
+
+def promoteToQueen(queen_name, location, is_white):
+    chess_pieces[queen_name] = class_dictionary["Q"](queen_name, location, is_white)
+    
 
 if __name__ == "__main__":
     ## Black start on the top of the board, white at the bottom
     chess_pieces = createBoard()
-    #print()
-    #print(df)
+    temp = "KnightBlack1"
+    temp2 = "PawnWhite1"
+    
     for piece in chess_pieces:
         Moves.possibleMovesForPiece(chess_pieces, piece)
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
-    #print()   
-    #print(df_pinned_by_white)
-    #print()
-    Moves.modifyPinnedDF(chess_pieces, "QueenWhite2", df_pinned_by_white, df_pinned_by_black, True)
-    #print()
-    #print(df_pinned_by_white)
 
-    print(chess_pieces["QueenWhite1"].pinned)
+    print(df)
+    print()
+
+
+    move = ["PawnBlack1", [0,1]]
+    Moves.activateMove(chess_pieces, move, False, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
+
+    print(df)
+    print(chess_pieces)
+
+    
+
+
+
+
+
+
+
+
+
 
 
 
