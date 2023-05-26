@@ -79,7 +79,7 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
                 else:
                     path_blocked = True
 
-    return movement_result, pinned_result
+    return repackLocationList(movement_result), repackLocationList(pinned_result)
 
 def directionCounter(dict, is_white, directions_with_locations):
     """ Takes in a nested array of each direction a piece can move into and the location of the steps in each direction
@@ -119,6 +119,10 @@ def directionCounter(dict, is_white, directions_with_locations):
                 break
         movement_result.append(direction_movement_result)
         pinned_result.append(direction_pinned_result)
+
+    movement_result = repackLocationList(movement_result)
+    pinned_result = repackLocationList(pinned_result)
+    
     return movement_result, pinned_result
 
 def directionsWithLocations(dict, piece, single_move, row, column):
@@ -183,13 +187,11 @@ def modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, substrac
         modifier = -1
 
     if "White" in piece:
-        for direction in pinned_result:
-            for step in direction:
-                df_pinned_by_white.iloc[*step] += modifier
+        for location in pinned_result:
+            df_pinned_by_white.iloc[location] += modifier
     else:
-        for direction in pinned_result:
-            for step in direction:
-                df_pinned_by_black.iloc[*step] += modifier
+        for location in pinned_result:
+            df_pinned_by_black.iloc[location] += modifier
 
 def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
     """Function takes in multiple arguments which are used to look for Casteling. the is_white color 
@@ -229,6 +231,39 @@ def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
 
     return castle
 
+def unpackNestedList(nested):
+    result = []
+    for item in nested:
+        if isinstance(item, list):
+            result.extend(unpackNestedList(item))
+        else:
+            result.append(item)
+    return result
+
+def repackLocationList(nested):
+    """Location data is stored in sets of 2. After unpacking the nested lists with variable depth it needs
+    to be repacked in row, column lists. due to the recursive nature of this process the unpacking is done
+    in a seperate function
+
+    Args:
+        nested list: a nested list which needs to be flattend first and repacked in [row, column] format
+
+    Returns:
+        list: nested list with an uniform depth of 1
+    """
+
+    unnested = unpackNestedList(nested)
+    temp = []
+    result = []
+
+    for item in unnested:
+        temp.append(item)
+        if len(temp) == 2:
+            result.append(temp)
+            temp = []
+
+    return result
+
 def checkForPromotion(dict, is_white, df):
     """check for promotion, this function is called after a move is made but before the opponents turn is.
 
@@ -250,7 +285,11 @@ def checkForPromotion(dict, is_white, df):
 
     return [[]]
 
+def movePiece(dict, piece, is_white, df, df_pinned_by_white, df_pinned_by_black):
+    modifyPinnedDF(dict, piece, df_pinned_by_white, df_pinned_by_black, True)
 
+    for other_pieces in dict:
+        pass
 
 
 

@@ -66,16 +66,23 @@ def Test():
 if __name__ == "__main__":
     ## Black start on the top of the board, white at the bottom
     chess_pieces = createBoard()
-    print()
-    print(df)
+    #print()
+    #print(df)
     for piece in chess_pieces:
         Moves.possibleMovesForPiece(chess_pieces, piece)
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
-    print()   
-    print(df_pinned_by_white)
-    print()
+    #print()   
+    #print(df_pinned_by_white)
+    #print()
     Moves.modifyPinnedDF(chess_pieces, "QueenWhite2", df_pinned_by_white, df_pinned_by_black, True)
-    print()
-    print(df_pinned_by_white)
+    #print()
+    #print(df_pinned_by_white)
+
+    print(chess_pieces["QueenWhite1"].pinned)
+
+
+
+
+
 
 
