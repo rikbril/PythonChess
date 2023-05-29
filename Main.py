@@ -27,11 +27,11 @@ def createBoard():
     ## Black start on the top of the board, white at the bottom
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
 
-    start_fen = "R3K2R/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
+    #start_fen = "R3K2R/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
     #start_fen = "8/8/2Q1Q3/8/8/2q5/8/7k"
     #start_fen = "3P4/8/2P5/8/8/8/8/2q5"
     #start_fen = "3P4/3n4/8/8/8/8/8/8"
-
+    start_fen = "K2r3r/8/8/R7/4Q2Q/8/8/R6Q"
 
     count = 0
 
@@ -67,11 +67,7 @@ def Test():
     print(Moves.checkForPromotion(chess_pieces, False, df))
     print(Moves.CheckForCastle(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black))
     Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
-    Moves.activateMove(chess_pieces, move, False, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
-
-def promoteToQueen(queen_name, location, is_white):
-    chess_pieces[queen_name] = class_dictionary["Q"](queen_name, location, is_white)
-    
+    Moves.move(chess_pieces, [2, 2], False, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
 
 if __name__ == "__main__":
     ## Black start on the top of the board, white at the bottom
@@ -84,16 +80,19 @@ if __name__ == "__main__":
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
 
     print(df)
-    print()
+    
+    moves = Moves.listAllMovesByColor(chess_pieces, True, df, df_pinned_by_white, df_pinned_by_black)
+    result = ""
 
-
-    move = ["PawnBlack1", [0,1]]
-    Moves.activateMove(chess_pieces, move, False, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
+    for move in moves:
+        if "QueenWhite2" in move[0]:
+            move[1][0] = [6, 5]
+            result = Moves.move(chess_pieces, [move[0], move[1][0]], True, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
 
     print(df)
-    print(chess_pieces)
+    print()
 
-    
+    print(result)
 
 
 

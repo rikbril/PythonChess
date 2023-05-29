@@ -255,13 +255,13 @@ def CheckForCastle(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
             rook_name = "Rook" + color_name + "1"
             if dict[rook_name].has_moved == False:
                 if df.iloc[row, 1] == 0 and df.iloc[row, 2] == 0 and df.iloc[row, 3] == 0:
-                    if opposing_color_df.iloc[row, 0] == 0 and opposing_color_df.iloc[row, 1] == 0 and opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0:
+                    if opposing_color_df.iloc[row, 2] == 0 and opposing_color_df.iloc[row, 3] == 0 and opposing_color_df.iloc[row, 4] == 0:
                         castle[0] = True
         if dict.get("Rook" + color_name + "2"):
             rook_name = "Rook" + color_name + "2"
             if dict[rook_name].has_moved == False:
                 if df.iloc[row, 5] == 0 and df.iloc[row, 6] == 0:
-                    if opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0 and opposing_color_df.iloc[row, 7] == 0:
+                    if opposing_color_df.iloc[row, 4] == 0 and opposing_color_df.iloc[row, 5] == 0 and opposing_color_df.iloc[row, 6] == 0:
                         castle[1] = True
 
     return castle
@@ -300,7 +300,6 @@ def promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_w
     possibleMovesForPiece(dict, queen_name)
     modifyPinnedDF(dict, queen_name, df_pinned_by_white, df_pinned_by_black)
 
-
 def movePiece(dict, piece, new_location, df, df_pinned_by_white, df_pinned_by_black):
     """Moves a piece to its new location. This includes looking for all the pieces it might interact with and recalculating
     their possible moves, which places they are pinning down. 
@@ -338,11 +337,17 @@ def moveCasteling(dict, df, king, rook, castle_location, df_pinned_by_white, df_
     modifyPinnedDF(dict, rook, df_pinned_by_white, df_pinned_by_black, True)
     modifyPinnedDF(dict, king, df_pinned_by_white, df_pinned_by_black, True)
 
-    df.iloc[castle_location[0], 4] = rook
-    df.iloc[*castle_location] = king
+    king_location = 2 if "1" in rook else 6
+    rook_location = 3 if "1" in rook else 5
 
-    dict[king].location = [*castle_location]
-    dict[rook].location = [castle_location[0], 4]
+    df.iloc[castle_location[0], king_location] = king
+    df.iloc[castle_location[0], rook_location] = rook
+    df.iloc[castle_location[0], 4] = 0
+    df.iloc[castle_location[0], 0 if "1" in rook else 7] = 0
+
+
+    dict[king].location = [castle_location[0], king_location]
+    dict[rook].location = [castle_location[0], rook_location]
 
     possibleMovesForPiece(dict, king)
     possibleMovesForPiece(dict, rook)
@@ -417,25 +422,93 @@ def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_bla
             rook += "1" if x == 0 else "2"
             row = 0 if is_white else 7
             column = 0 if x == 0 else 7
-            side = "Left" if x == 0 else "Right"
-            all_moves.append([("Castle" + side), [king, rook, [row, column]]])
+            side = "Queen" if x == 0 else "King"
+            all_moves.append([("Castle" + side + color_name) , [king, rook, [row, column]]])
     
     return all_moves
 
-def activateMove(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class_dictionary):
+def move(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class_dictionary):
     if "Castle" in move[0]:
         king, rook, castle_location = move[1]
         moveCasteling(dict, df, king, rook, castle_location, df_pinned_by_white, df_pinned_by_black)
+        if "Queen" in move[0]:
+            return "0-0-0"
+        else:
+            return "0-0"
     else:
         piece = move[0]
         new_piece_location = move[1]
+        notation = chessNotation(dict, piece, dict[piece].location, move[1], is_white)
         movePiece(dict, piece, new_piece_location, df, df_pinned_by_white, df_pinned_by_black)
         
         promotion = checkForPromotion(is_white, df)
+
         if promotion != False:
             promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
+        
+        return notation
+def chessNotation(dict, piece, old_location, new_location, is_white):
+    """creates the notation for the move in order to keep track of the game
+
+    Args:
+        dict (dictionary): dictionary of chess pieces
+        piece (dictionary[key]): chess piece which is moveing
+        old_location ([row, column]): location the piece is moveing from
+        new_location ([row, column]): location the piece is moveing to
+        is_white (bool): True if the piece is White, False if the piece is Black
+
+    Returns:
+        String: notation which belongs to the move
+    """
+    board_letter = "abcdefgh"
+    board_number = [8, 7, 6, 5, 4, 3, 2, 1]
+    piece_fen_letter = {"King": "K", "Queen": "Q", "Knight": "N", "Rook": "R", "Bischop": "B", "Pawn": ""}
+    notation = ""
+    pawn_promotion = True if   (new_location[0] == 0 and is_white == False and "Pawn" in piece) or (
+                                new_location[0] == 7 and is_white == True and "Pawn" in piece) else False
+
+    simular_pieces = []
+    color_name = "White" if is_white == True else "Black"
+    piece_name = piece[:-1]
+    hit = False
     
+
+    for name in piece_fen_letter:    
+        if name in piece:
+            notation += piece_fen_letter[name]
+        
+    for other_pieces in dict:
+        if other_pieces == piece:
+            pass
+        elif color_name in other_pieces:
+            if piece_name in other_pieces:
+                simular_pieces.append(other_pieces)
+        else:
+            if list(dict[other_pieces].location) == new_location:
+                hit = True
+
+    print("simular", simular_pieces)
+
+    if simular_pieces != []:
+        for other_pieces in simular_pieces:
+            print(dict[other_pieces].movement)
+            for other_move in dict[other_pieces].movement:
+                print(other_move, old_location)
+                if other_move == new_location:
+                    if dict[other_pieces].location[0] == old_location[0]:
+                        notation += board_letter[old_location[1]]
+                    if dict[other_pieces].location[1] ==  old_location[1]:
+                        notation += str(board_number[old_location[0]])
     
+    print("notation", notation)
+    if hit == True:
+        notation += "x"
+
+    notation += board_letter[new_location[1]]
+    notation += str(board_number[new_location[0]])
+
+    notation += "Q" if pawn_promotion == True  else ""
+    return notation
 
 
 
