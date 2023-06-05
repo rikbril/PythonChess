@@ -26,13 +26,14 @@ def createBoard():
 
     ## Black start on the top of the board, white at the bottom
     start_fen = "RNBQKBNR/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
+    start_fen = "RNBQKBNR/PPPPPPPP/2P5/1p6/8/8/pppppppp/rbnqknbr"
 
     #start_fen = "R3K2R/PPPPPPPP/8/8/8/8/pppppppp/rbnqknbr"
     #start_fen = "8/8/2Q1Q3/8/8/2q5/8/7k"
     #start_fen = "3P4/8/2P5/8/8/8/8/2q5"
     #start_fen = "3P4/3n4/8/8/8/8/8/8"
     #start_fen = "K2r3r/8/8/R7/4Q2Q/8/8/R6Q"
-    start_fen = "8/8/8/8/kq5Q/8/8/3K4"
+    #start_fen = "8/8/8/8/kq5Q/8/8/3K4"
 
     count = 0
 
@@ -73,27 +74,45 @@ def Test():
 if __name__ == "__main__":
     ## Black start on the top of the board, white at the bottom
     chess_pieces = createBoard()
-    temp = "KnightBlack1"
-    temp2 = "PawnWhite1"
+    temp = "PawnWhite1"
+    temp2 = "PawnBlack1"
     
-    for piece in chess_pieces:
-        Moves.possibleMovesForPiece(chess_pieces, piece)
-        Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
-
-    print(df_pinned_by_black)
-    
-    moves = Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
-    result = ""
-
-    print()
-    print(df_pinned_by_black)
-    print()
     print(df)
 
-    print(result)
+    enpassant_location = False
+    for piece in chess_pieces:
+        Moves.possibleMovesForPiece(chess_pieces, piece, enpassant_location)
+        Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
+    move_white = Moves.listAllMovesByColor(chess_pieces, True, df, df_pinned_by_white, df_pinned_by_black)
+    move_black = Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
 
+    for piece, moves in move_white:
+        if temp in piece:
+           for move in moves:
+               if move[0] == 3:
+                   result = Moves.move(chess_pieces, [piece, move], True, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
 
+    if type(result) == list:
+        result, enpassant_location = result
+    
+    print()
+    print(df)
+    
+    print()
+    print(enpassant_location)
 
+    for piece in chess_pieces:
+        Moves.possibleMovesForPiece(chess_pieces, piece, enpassant_location)
+        Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
+    move_white = Moves.listAllMovesByColor(chess_pieces, True, df, df_pinned_by_white, df_pinned_by_black)
+    move_black = Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
+
+    for piece, moves in move_black:
+        if temp2 in piece:
+           print("!!!", moves)
+           for move in moves:
+               if move[0] == 3:
+                   result = Moves.move(chess_pieces, [piece, move], True, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
 
 
 

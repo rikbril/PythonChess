@@ -56,7 +56,7 @@ def getLocationFromName(dict, value):
         if key == value:
             return dict[key].location
     
-def possibleMovesForPiece(dict, piece):
+def possibleMovesForPiece(dict, piece, enpassant_location=False):
     """Takes in a piece and calculates to which places the piece can move, and which locations are pinned by this piece. 
     in order to keep track of attack/defend vectors (i presume, i dont play chess).
 
@@ -83,7 +83,7 @@ def possibleMovesForPiece(dict, piece):
     directions_with_locations = directionsWithLocations(dict, piece, single_move, row, column)
 
     if "Pawn" in piece:
-        dict[piece].movement, dict[piece].pinned = directionCounterForPawns(dict, is_white, directions_with_locations, column)
+        dict[piece].movement, dict[piece].pinned = directionCounterForPawns(dict, is_white, directions_with_locations, column, enpassant_location)
     else:
         dict[piece].movement, dict[piece].pinned = directionCounter(dict, is_white, directions_with_locations)
 
@@ -102,6 +102,8 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
     movement_result = [[]]
     pinned_result = [[]]
 
+    print(enpassant_location)
+
     path_blocked = False
     for direction in directions_with_locations:
         for step in direction:
@@ -115,8 +117,10 @@ def directionCounterForPawns(dict, is_white, directions_with_locations, column, 
             else:
                 pinned_result[0].append(step)
                 if encounter_color != None:
-                    if encounter_color != is_white or step == enpassant_location:
+                    if encounter_color != is_white:
                         movement_result[0].append(step)
+                elif enpassant_location == step:
+                    movement_result[0].append(step)
 
     return repackLocationList(movement_result), repackLocationList(pinned_result)
 
@@ -397,7 +401,7 @@ def lookForEncounters(dict, piece, old_piece_location, new_piece_location, targe
 
     return encounter_list
 
-def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_black):
+def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, enpassant_location=False):
     """lists all the moves which a color can make, including casteling
 
     Args:
@@ -415,7 +419,6 @@ def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_bla
     
     king_location = dict[("King" + name_of_color + "1")].location
     king_counter = df_pinned_by_black.iloc[*king_location] if is_white == True else df_pinned_by_white.iloc[*king_location]
-    print(king_location, name_of_color, king_counter)
 
     if king_counter > 0:
         checkKingSafety(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, king_location)
@@ -451,6 +454,12 @@ def move(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class
         piece = move[0]
         new_piece_location = move[1]
         notation = chessNotation(dict, piece, dict[piece].location, move[1], is_white)
+        enpassant_location = False
+        if "Pawn" in piece:
+            old_place_location = dict[piece].location
+            if (abs(new_piece_location[0] - old_place_location[0])) == 2:
+                enpassant_location = [int(new_piece_location[0] -((new_piece_location[0] - old_place_location[0]) /2)), new_piece_location[1]] 
+                print("Enpassant location", enpassant_location)
         movePiece(dict, piece, new_piece_location, df, df_pinned_by_white, df_pinned_by_black)
         
         promotion = checkForPromotion(is_white, df)
@@ -458,6 +467,8 @@ def move(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class
         if promotion != False:
             promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
         
+        if enpassant_location:
+            return [notation, enpassant_location]
         return notation
 
 def chessNotation(dict, piece, old_location, new_location, is_white):
@@ -500,20 +511,15 @@ def chessNotation(dict, piece, old_location, new_location, is_white):
             if list(dict[other_pieces].location) == new_location:
                 hit = True
 
-    print("simular", simular_pieces)
-
     if simular_pieces != []:
         for other_pieces in simular_pieces:
-            print(dict[other_pieces].movement)
             for other_move in dict[other_pieces].movement:
-                print(other_move, old_location)
                 if other_move == new_location:
                     if dict[other_pieces].location[0] == old_location[0]:
                         notation += board_letter[old_location[1]]
                     if dict[other_pieces].location[1] ==  old_location[1]:
                         notation += str(board_number[old_location[0]])
     
-    print("notation", notation)
     if hit == True:
         notation += "x"
 
@@ -535,7 +541,7 @@ def checkKingSafety(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, 
         df_pinned_by_black (DataFrame): DataFrame of all the places black attacks
         king_location (int, int): location of the pieces on the board
     """
-    
+
     pinners = {}
     obstructors = {}
     for piece in dict:
