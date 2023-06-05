@@ -4,6 +4,11 @@ def locationToColour(dict, value):
             return dict[item].is_white
     return None
 
+def locationToName(dict, value):
+    for key in dict:
+        if [*dict[key].location] == value:
+            return key
+
 def unpackNestedList(nested):
     result = []
     for item in nested:
@@ -144,11 +149,11 @@ def directionCounter(dict, is_white, directions_with_locations):
             else:
                 encounter -= 1
 
-            if encounter == 2:
+            if encounter >= 1 and previous_encounter == 2 :
                 direction_movement_result.append(step)
-            if encounter >= 0 and previous_encounter > 1:
+            if encounter >= 0 and previous_encounter >= 1:
                 direction_pinned_result.append(step)
-
+            
             if encounter <= 0:
                 break
         movement_result.append(direction_movement_result)
@@ -408,6 +413,13 @@ def listAllMovesByColor(dict, is_white, df, df_pinned_by_white, df_pinned_by_bla
     all_moves = []
     name_of_color = "White" if is_white == True else "Black"
     
+    king_location = dict[("King" + name_of_color + "1")].location
+    king_counter = df_pinned_by_black.iloc[*king_location] if is_white == True else df_pinned_by_white.iloc[*king_location]
+    print(king_location, name_of_color, king_counter)
+
+    if king_counter > 0:
+        checkKingSafety(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, king_location)
+
     for piece in dict:
         if name_of_color in piece and dict[piece].movement != []:
             
@@ -447,6 +459,7 @@ def move(dict, move, is_white, df, df_pinned_by_white, df_pinned_by_black, class
             promoteToQueen(dict, piece, is_white, new_piece_location, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
         
         return notation
+
 def chessNotation(dict, piece, old_location, new_location, is_white):
     """creates the notation for the move in order to keep track of the game
 
@@ -510,7 +523,93 @@ def chessNotation(dict, piece, old_location, new_location, is_white):
     notation += "Q" if pawn_promotion == True  else ""
     return notation
 
+def checkKingSafety(dict, is_white, df, df_pinned_by_white, df_pinned_by_black, king_location):
+    """function checks which pieces blocks a check and filters out all the moves other than in the direction of the pieces which is attacking 
+    the king
 
+    Args:
+        dict (dictionary): dictionary of all the pieces
+        is_white (bool): is the piece white
+        df (DataFrame): dataframe of all the pieces on the board
+        df_pinned_by_white (DataFrame): DataFrame of all the places white attacks
+        df_pinned_by_black (DataFrame): DataFrame of all the places black attacks
+        king_location (int, int): location of the pieces on the board
+    """
+    
+    pinners = {}
+    obstructors = {}
+    for piece in dict:
+        name_of_color = "White" if is_white == True else "Black"
+        if name_of_color not in piece:
+            for move in dict[piece].pinned:
+                if move == [*king_location]:
+                    pinners[piece] = dict[piece].location
+    
+    for pinner in pinners:
+        row, column = 0,0
+        steps = 0
+        pinner_location = pinners[pinner]
+        if pinner_location[0] < king_location[0]:
+            row = 1
+            if steps == 0:
+                steps = abs(pinner_location[0]- king_location[0])
+        elif pinner_location[0] > king_location[0]:
+            row = -1
+            if steps == 0:
+                steps = abs(pinner_location[0]- king_location[0])
+        if pinner_location[1] < king_location[1]:
+            column = 1
+            if steps == 0:
+                steps = abs(pinner_location[1]- king_location[1])
+        elif pinner_location[1] > king_location[1]:
+            column = -1
+            if steps == 0:
+                steps = abs(pinner_location[1]- king_location[1])
+        
+        for step in range(1, steps):
+            obstruction_name = locationToName(dict, [*(pinner_location[0] + (row * step), pinner_location[1] + (column * step))])
+            if obstruction_name:
+                obstructors[obstruction_name] = [[*(pinner_location[0] + (row * step), pinner_location[1] + (column * step))], [row, column]]
+                break
+
+    for obstructor in obstructors:
+        [direction_row, direction_column] = obstructors[obstructor][1]
+        to_merge_list = []
+        location = dict[obstructor].location
+
+        modifyPinnedDF(dict, obstructor, df_pinned_by_white, df_pinned_by_black, True)
+
+        direction_row = direction_row - (direction_row * 2)
+        direction_column = direction_column - (direction_column * 2)
+
+        for step in range (1,8):
+            adjustedRow = location[0] + (step * direction_row)
+            adjustedColumn = location[1] + (step * direction_column)
+            to_merge_list.append([adjustedRow, adjustedColumn])
+        
+        old_pinned_list = dict[obstructor].pinned
+        new_pinned_list = []        
+        old_movement_list = dict[obstructor].movement
+        new_movement_list = []
+        for item in to_merge_list:
+            print(item)
+            if item in old_movement_list:
+                new_movement_list.append(item)
+            if item in old_pinned_list:
+                new_pinned_list.append(item)
+
+
+
+        dict[obstructor].movement = new_movement_list
+        dict[obstructor].pinned = new_pinned_list
+
+        #Why does this not work?
+        #dict[obstructor].pinned = list(set(dict[obstructor].pinned) & set(to_merge_list))
+        #dict[obstructor].movement = list(set(dict[obstructor].movement) & set(to_merge_list))
+
+        modifyPinnedDF(dict, obstructor,df_pinned_by_white, df_pinned_by_black)
+    pass
+    
 
 
 

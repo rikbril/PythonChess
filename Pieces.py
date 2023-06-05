@@ -9,7 +9,6 @@ class Piece():
             is_white (bool): True if the piece is White, otherwise the piece is Black
             has_moved (bool, optional): keeps track if the piece has moved, will be used for de double start of pawns and king/rook swap. Defaults to False.
         """
-        self.points = 100
         self.name = name  
         self.location = location
         self.is_white = is_white
@@ -90,7 +89,6 @@ class Pawn(Piece):
             has_moved (bool, optional): keeps track if the piece has moved, will be used for de double start of pawns and king/rook swap. Defaults to False.
         """
         super().__init__(name, location, is_white, has_moved=False)
-        self.points = 50
         self.single_move = self.single_move
         
         # adjust the movement and attack vectors of the pawns in regards to their color

@@ -31,7 +31,8 @@ def createBoard():
     #start_fen = "8/8/2Q1Q3/8/8/2q5/8/7k"
     #start_fen = "3P4/8/2P5/8/8/8/8/2q5"
     #start_fen = "3P4/3n4/8/8/8/8/8/8"
-    start_fen = "K2r3r/8/8/R7/4Q2Q/8/8/R6Q"
+    #start_fen = "K2r3r/8/8/R7/4Q2Q/8/8/R6Q"
+    start_fen = "8/8/8/8/kq5Q/8/8/3K4"
 
     count = 0
 
@@ -79,18 +80,15 @@ if __name__ == "__main__":
         Moves.possibleMovesForPiece(chess_pieces, piece)
         Moves.modifyPinnedDF(chess_pieces, piece, df_pinned_by_white, df_pinned_by_black)
 
-    print(df)
+    print(df_pinned_by_black)
     
-    moves = Moves.listAllMovesByColor(chess_pieces, True, df, df_pinned_by_white, df_pinned_by_black)
+    moves = Moves.listAllMovesByColor(chess_pieces, False, df, df_pinned_by_white, df_pinned_by_black)
     result = ""
 
-    for move in moves:
-        if "QueenWhite2" in move[0]:
-            move[1][0] = [6, 5]
-            result = Moves.move(chess_pieces, [move[0], move[1][0]], True, df, df_pinned_by_white, df_pinned_by_black, class_dictionary)
-
-    print(df)
     print()
+    print(df_pinned_by_black)
+    print()
+    print(df)
 
     print(result)
 
